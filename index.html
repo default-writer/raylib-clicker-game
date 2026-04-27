@@ -1,46 +1,100 @@
 <!doctype html>
-<html lang="ru">
-<head>
-    <meta charset="utf-8">
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <title>Clicker Raylib Game</title>
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-            background-color: #000;
-            overflow: hidden;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            width: 100vw;
-        }
+<html lang="en">
 
-        canvas.emscripten {
-            border: 0 none;
-            background-color: black;
-            image-rendering: pixelated;
-            width: 100vw;
-            height: 75vw; 
-            max-height: 100vh;
-            max-width: 133.33vh;
-        }
-    </style>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <title>Clicker Game (raylib)</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #000;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      width: 100vw;
+    }
+
+    canvas.emscripten {
+      border: 0 none;
+      background-color: black;
+      /* Улучшает четкость пиксель-арта */
+      image-rendering: -moz-crisp-edges;
+      image-rendering: pixelated;
+      width: 100vw;
+      height: 75vw;
+      max-height: 100vh;
+      max-width: 133.33vh;
+      outline: none;
+    }
+
+    #hiddenInput {
+      position: absolute;
+      /* Уводим за пределы экрана, чтобы не мешало */
+      top: -100px;
+      left: -100px;
+      width: 1px;
+      height: 1px;
+      opacity: 0;
+      border: none;
+      outline: none;
+      pointer-events: none;
+    }
+  </style>
 </head>
+
 <body>
-    <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()" tabindex="-1"></canvas>
-    <script type='text/javascript'>
-        var Module = {
-            canvas: (function() {
-                var canvas = document.getElementById('canvas');
-                canvas.addEventListener("mousedown", function(e) { window.focus(); e.preventDefault(); }, false);
-                return canvas;
-            })(),
-            print: function(text) { console.log(text); },
-            printErr: function(text) { console.error(text); }
-        };
-    </script>
-    <script async type="text/javascript" src="index.js"></script>
+  <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()" tabindex="0"></canvas>
+  <!-- Скрытое поле для вызова клавиатуры на мобилках -->
+  <input type="text" id="hiddenInput" autocomplete="off" autocapitalize="off" spellcheck="false">
+
+  <script type='text/javascript'>
+    const inputElement = document.getElementById('hiddenInput');
+    const canvasElement = document.getElementById('canvas');
+
+    var Module = {
+      canvas: canvasElement,
+      print: (text) => console.log(text),
+      printErr: (text) => console.error(text)
+    };
+
+    // При клике на канвас — фокус ему
+    canvasElement.addEventListener("mousedown", () => canvasElement.focus());
+
+    function triggerKeyboard() {
+      inputElement.value = '';
+      inputElement.focus();
+    }
+
+    inputElement.addEventListener('input', (e) => {
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      const data = e.data;
+
+      if (data && (isMobile || e.inputType === 'insertFromPaste')) {
+        for (let i = 0; i < data.length; i++) {
+          const code = data.charCodeAt(i);
+          // Эмулируем keypress только для мобилок и вставок текста
+          canvasElement.dispatchEvent(new KeyboardEvent('keypress', { charCode: code }));
+        }
+      }
+      inputElement.value = '';
+    });
+
+    inputElement.addEventListener('keydown', (e) => {
+      if (e.key === 'Backspace') {
+        canvasElement.dispatchEvent(new KeyboardEvent('keydown', { key: 'Backspace', keyCode: 8 }));
+      }
+      // Если нажали Enter — тоже пробрасываем
+      if (e.key === 'Enter') {
+        canvasElement.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', keyCode: 13 }));
+      }
+    });
+  </script>
+
+  <script async type="text/javascript" src="index.js"></script>
 </body>
+
 </html>

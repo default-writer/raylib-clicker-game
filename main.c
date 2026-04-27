@@ -216,6 +216,9 @@ void handle_name_input(void) {
 //----------------------------------------------------------------------
 EMSCRIPTEN_KEEPALIVE
 void main_loop(void) {
+#if defined(PLATFORM_WEB)
+  static bool kb_opened = false;
+#endif
   if (state == STATE_PLAYING) {
     double elapsed = GetTime() - game_start_time;
     float time_left = level_params.duration - (float)elapsed;
@@ -238,19 +241,29 @@ void main_loop(void) {
     }
   } else if (state == STATE_ENTER_NAME) {
     handle_name_input();
+
+#if defined(PLATFORM_WEB)
+    static bool kb_opened = false;
+    if (!kb_opened) {
+      emscripten_run_script("triggerKeyboard();");
+      kb_opened = true;
+    }
+#endif
+
     if (IsKeyPressed(KEY_ENTER)) {
       if (strlen(name_input) > 0) {
         add_score(name_input, score, level_params.name);
+        state = STATE_SCOREBOARD;
+        name_input[0] = '\0';
+#if defined(PLATFORM_WEB)
+        kb_opened = false;
+#endif
       }
-      state = STATE_SCOREBOARD;
-      name_input[0] = '\0';
     }
   }
 
   BeginDrawing();
   ClearBackground(RAYWHITE);
-
-  Vector2 mouse = GetMousePosition();
 
   switch (state) {
   case STATE_MENU:
@@ -314,18 +327,28 @@ void main_loop(void) {
     if (draw_button(250, 420, 300, 60, BUTTON_MAIN_MENU, 30))
       state = STATE_MENU;
     if (score > 0) {
-      if (draw_button(250, 510, 300, 60, BUTTON_SAVE_SCORE, 30))
+      if (draw_button(250, 510, 300, 60, BUTTON_SAVE_SCORE, 30)) {
         state = STATE_ENTER_NAME;
+#if defined(PLATFORM_WEB)
+        emscripten_run_script("triggerKeyboard();"); // Вызываем прямо здесь!
+#endif
+      }
     }
     break;
   }
 
-  case STATE_ENTER_NAME: {
+  case STATE_ENTER_NAME:
     DrawText(ENTER_NAME_TITLE, 220, 150, 40, DARKBLUE);
+
     DrawText(NAME_PROMPT, 200, 250, 30, BLACK);
-    char display_name[32];
-    snprintf(display_name, sizeof(display_name), "%s%s", name_input,
-             ((int)(GetTime() * 2) % 2) ? "_" : "");
+
+    const char *cursor = ((int)(GetTime() * 2) % 2 == 0) ? "_" : "";
+
+    char buffer[64];
+    snprintf(buffer, sizeof(buffer), "%s%s", name_input, cursor);
+
+    DrawText(buffer, 310, 250, 30, MAROON);
+
     if (draw_button(300, 350, 200, 50, BUTTON_SAVE, 25)) {
       if (strlen(name_input) > 0) {
         add_score(name_input, score, level_params.name);
@@ -336,9 +359,11 @@ void main_loop(void) {
     if (draw_button(300, 420, 200, 50, BUTTON_CANCEL, 25)) {
       state = STATE_GAMEOVER;
       name_input[0] = '\0';
+#if defined(PLATFORM_WEB)
+      kb_opened = false;
+#endif
     }
     break;
-  }
 
   case STATE_SCOREBOARD: {
     DrawText(SCOREBOARD_TITLE, 250, 50, 40, DARKBLUE);
