@@ -1,0 +1,17 @@
+CompileFlags:
+  Compiler: "/usr/bin/clang"
+  Add: [
+    -Wall, 
+    -Wextra,
+    -std=c11,
+    -I/usr/local/include,
+    -I/usr/include,
+    -I/home/user/src/raylib/src,
+    -I/home/user/src/emsdk/upstream/emscripten/cache/sysroot/include
+  ]
+
+InlayHints:
+  Designators: false
+  Enabled: false
+  ParameterNames: false
+  DeducedTypes: false

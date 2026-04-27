@@ -1,0 +1,14 @@
+.venv/
+.vscode/
+.history/
+*.db
+index.*
+
+*.o
+*.obj
+*.exe
+*.out
+
+main
+
+!/shell.html

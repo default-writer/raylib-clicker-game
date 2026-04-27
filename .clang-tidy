@@ -1,0 +1,14 @@
+Checks: >
+  -*,
+  llvm-*,
+  clang-diagnostic-*,
+  clang-analyzer-*,
+  -performance-unnecessary-value-param,
+  -readability-function-cognitive-complexity,
+  -readability-magic-numbers,
+  -cppcoreguidelines-avoid-magic-numbers
+WarningsAsErrors: ''
+HeaderFilterRegex: ''
+AnalyzeTemporaryDtors: false
+FormatStyle: llvm
+User: {}
