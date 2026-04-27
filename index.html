@@ -61,12 +61,19 @@
       printErr: (text) => console.error(text)
     };
 
-    // При клике на канвас — фокус ему
-    canvasElement.addEventListener("mousedown", () => canvasElement.focus());
+    canvasElement.addEventListener("mousedown", function (e) {
+      setTimeout(() => canvasElement.focus(), 0);
+    });
+
+    canvasElement.addEventListener("touchstart", function (e) {
+      setTimeout(() => inputElement.focus(), 0);
+    }, false);
 
     function triggerKeyboard() {
-      inputElement.value = '';
-      inputElement.focus();
+      setTimeout(function () {
+        inputElement.value = '';
+        inputElement.focus();
+      }, 0)
     }
 
     inputElement.addEventListener('input', (e) => {
