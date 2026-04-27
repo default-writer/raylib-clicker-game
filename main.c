@@ -198,6 +198,8 @@ int draw_button(int x, int y, int w, int h, const char *text, int font_size) {
   return hover && IsMouseButtonPressed(MOUSE_BUTTON_LEFT);
 }
 
+static bool submitted = false;
+
 void handle_name_input(void) {
   int c = GetCharPressed();
   while (c > 0) {
@@ -277,6 +279,7 @@ void main_loop(void) {
         current_level = i;
         level_params = levels[i];
         score = 0;
+        submitted = false;
         game_start_time = GetTime();
         spawn_target();
         state = STATE_PLAYING;
@@ -312,12 +315,9 @@ void main_loop(void) {
       state = STATE_SELECT;
     if (draw_button(250, 420, 300, 60, BUTTON_MAIN_MENU, 30))
       state = STATE_MENU;
-    if (score > 0) {
+    if (score > 0 && !submitted) {
       if (draw_button(250, 510, 300, 60, BUTTON_SAVE_SCORE, 30)) {
         state = STATE_ENTER_NAME;
-#if defined(PLATFORM_WEB)
-        emscripten_run_script("triggerKeyboard();");
-#endif
       }
     }
     break;
@@ -338,6 +338,7 @@ void main_loop(void) {
     if (draw_button(300, 350, 200, 50, BUTTON_SAVE, 25)) {
       if (strlen(name_input) > 0) {
         add_score(name_input, score, level_params.name);
+        submitted = true;
         state = STATE_SCOREBOARD;
         name_input[0] = '\0';
       }

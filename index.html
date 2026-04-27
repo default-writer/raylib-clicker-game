@@ -52,62 +52,23 @@
 </head>
 
 <body>
-  <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()" tabindex="0"></canvas>
-  <!-- Скрытое поле для вызова клавиатуры на мобилках -->
-  <input type="text" id="hiddenInput" autocomplete="off" autocapitalize="off" spellcheck="false">
-
+  <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()" tabindex="1"></canvas>
+  <input id="hiddenInput" type="text" style="position: absolute; left: -9999px;" autocomplete="off" />
   <script type='text/javascript'>
-    const inputElement = document.getElementById('hiddenInput');
-    const canvasElement = document.getElementById('canvas');
-
     var Module = {
-      canvas: canvasElement,
-      print: (text) => console.log(text),
-      printErr: (text) => console.error(text)
+      canvas: (function () {
+        const canvasElement = document.getElementById('canvas');
+        canvasElement.addEventListener("click", function () {
+          canvasElement.focus();
+        });
+        return canvasElement;
+      })()
     };
-
-    canvasElement.addEventListener("mousedown", function (e) {
-      setTimeout(() => canvasElement.focus(), 0);
-    });
-
-    canvasElement.addEventListener("touchstart", function (e) {
-      inputElement.focus();
-    }, false);
-
-    function triggerKeyboard() {
-      const input = document.getElementById('hiddenInput');
-      input.value = '';
-      input.focus();
-
-      if (document.activeElement !== input) {
-        setTimeout(() => input.focus(), 10);
-      }
+    var hiddenInput = document.getElementById('hiddenInput');
+    function syncHiddenInput(str) {
+      hiddenInput.value = str;
     }
-
-    inputElement.addEventListener('input', (e) => {
-      const data = e.data || inputElement.value;
-
-      if (data && document.activeElement === inputElement) {
-        for (let i = 0; i < data.length; i++) {
-          canvasElement.dispatchEvent(new KeyboardEvent('keypress', {
-            charCode: data.charCodeAt(i)
-          }));
-        }
-      }
-      inputElement.value = '';
-    });
-
-    inputElement.addEventListener('keydown', (e) => {
-      if (e.key === 'Backspace') {
-        canvasElement.dispatchEvent(new KeyboardEvent('keydown', { key: 'Backspace', keyCode: 8 }));
-      }
-      // Если нажали Enter — тоже пробрасываем
-      if (e.key === 'Enter') {
-        canvasElement.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', keyCode: 13 }));
-      }
-    });
   </script>
-
   <script async type="text/javascript" src="index.js"></script>
 </body>
 
