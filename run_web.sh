@@ -11,7 +11,6 @@ emcc -o index.html main.c \
     -s EXPORTED_FUNCTIONS=['_main','_on_fs_loaded'] \
     -s EXPORTED_RUNTIME_METHODS=['ccall'] \
     -lidbfs.js \
-    --preload-file data \
     -DPLATFORM_WEB \
     --shell-file ./shell.html \
     -lGL
