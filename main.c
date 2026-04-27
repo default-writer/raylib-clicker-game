@@ -216,9 +216,6 @@ void handle_name_input(void) {
 //----------------------------------------------------------------------
 EMSCRIPTEN_KEEPALIVE
 void main_loop(void) {
-#if defined(PLATFORM_WEB)
-  static bool kb_opened = false;
-#endif
   if (state == STATE_PLAYING) {
     double elapsed = GetTime() - game_start_time;
     float time_left = level_params.duration - (float)elapsed;
@@ -242,22 +239,11 @@ void main_loop(void) {
   } else if (state == STATE_ENTER_NAME) {
     handle_name_input();
 
-#if defined(PLATFORM_WEB)
-    static bool kb_opened = false;
-    if (!kb_opened) {
-      emscripten_run_script("triggerKeyboard();");
-      kb_opened = true;
-    }
-#endif
-
     if (IsKeyPressed(KEY_ENTER)) {
       if (strlen(name_input) > 0) {
         add_score(name_input, score, level_params.name);
         state = STATE_SCOREBOARD;
         name_input[0] = '\0';
-#if defined(PLATFORM_WEB)
-        kb_opened = false;
-#endif
       }
     }
   }
@@ -330,7 +316,7 @@ void main_loop(void) {
       if (draw_button(250, 510, 300, 60, BUTTON_SAVE_SCORE, 30)) {
         state = STATE_ENTER_NAME;
 #if defined(PLATFORM_WEB)
-        emscripten_run_script("triggerKeyboard();"); // Вызываем прямо здесь!
+        emscripten_run_script("triggerKeyboard();");
 #endif
       }
     }
@@ -359,9 +345,6 @@ void main_loop(void) {
     if (draw_button(300, 420, 200, 50, BUTTON_CANCEL, 25)) {
       state = STATE_GAMEOVER;
       name_input[0] = '\0';
-#if defined(PLATFORM_WEB)
-      kb_opened = false;
-#endif
     }
     break;
 

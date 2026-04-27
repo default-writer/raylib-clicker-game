@@ -1,5 +1,11 @@
 <!doctype html>
 <html lang="en">
+<link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16x16.png">
+<link rel="manifest" href="site.webmanifest">
+<link rel="shortcut icon" href="favicon.ico">
+<meta name="theme-color" content="#ffffff">
 
 <head>
   <meta charset="utf-8">
@@ -33,15 +39,14 @@
 
     #hiddenInput {
       position: absolute;
-      /* Уводим за пределы экрана, чтобы не мешало */
-      top: -100px;
-      left: -100px;
-      width: 1px;
-      height: 1px;
+      top: 50%;
+      left: 50%;
+      width: 10px;
+      height: 10px;
       opacity: 0;
       border: none;
       outline: none;
-      pointer-events: none;
+      z-index: -1;
     }
   </style>
 </head>
@@ -66,25 +71,27 @@
     });
 
     canvasElement.addEventListener("touchstart", function (e) {
-      setTimeout(() => inputElement.focus(), 0);
+      inputElement.focus();
     }, false);
 
     function triggerKeyboard() {
-      setTimeout(function () {
-        inputElement.value = '';
-        inputElement.focus();
-      }, 0)
+      const input = document.getElementById('hiddenInput');
+      input.value = '';
+      input.focus();
+
+      if (document.activeElement !== input) {
+        setTimeout(() => input.focus(), 10);
+      }
     }
 
     inputElement.addEventListener('input', (e) => {
-      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-      const data = e.data;
+      const data = e.data || inputElement.value;
 
-      if (data && (isMobile || e.inputType === 'insertFromPaste')) {
+      if (data && document.activeElement === inputElement) {
         for (let i = 0; i < data.length; i++) {
-          const code = data.charCodeAt(i);
-          // Эмулируем keypress только для мобилок и вставок текста
-          canvasElement.dispatchEvent(new KeyboardEvent('keypress', { charCode: code }));
+          canvasElement.dispatchEvent(new KeyboardEvent('keypress', {
+            charCode: data.charCodeAt(i)
+          }));
         }
       }
       inputElement.value = '';
