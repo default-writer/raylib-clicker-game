@@ -200,19 +200,134 @@ int draw_button(int x, int y, int w, int h, const char *text, int font_size) {
 
 static bool submitted = false;
 
-void handle_name_input(void) {
-  int c = GetCharPressed();
-  while (c > 0) {
-    if (c >= 32 && c <= 125 && strlen(name_input) < MAX_NAME_LENGTH - 1) {
-      int len = strlen(name_input);
-      name_input[len] = (char)c;
-      name_input[len + 1] = '\0';
+typedef enum {
+    VK_A = 0, VK_B, VK_C, VK_D, VK_E, VK_F, VK_G, VK_H, VK_I, VK_J,
+    VK_K, VK_L, VK_M, VK_N, VK_O, VK_P, VK_Q, VK_R, VK_S, VK_T,
+    VK_U, VK_V, VK_W, VK_X, VK_Y, VK_Z,
+    VK_SHIFT, VK_ENTER, VK_BACKSPACE,
+    VK_COUNT
+} VirtualKey;
+
+// Расположение клавиш
+#define VK_ROWS 3
+#define VK_COLS 10
+#define VK_WIDTH 60
+#define VK_HEIGHT 40
+#define VK_MARGIN 10
+#define VK_START_X (SCREEN_WIDTH/2 - (VK_COLS * VK_WIDTH + (VK_COLS-1) * VK_MARGIN) / 2)
+#define VK_START_Y 350
+
+// Состояние клавиш
+static bool shift_pressed = false;
+
+// Получить имя клавиши
+const char* get_key_label(VirtualKey vk) {
+    static const char* letter_labels[26] = {
+        "a", "b", "c", "d", "e", "f", "g", "h", "i", "j",
+        "k", "l", "m", "n", "o", "p", "q", "r", "s", "t",
+        "u", "v", "w", "x", "y", "z"
+    };
+    if (vk >= VK_A && vk <= VK_Z) return letter_labels[vk];
+    switch (vk) {
+        case VK_SHIFT: return "Shift";
+        case VK_ENTER: return "Enter";
+        case VK_BACKSPACE: return "<-";
+        default: return "?";
     }
-    c = GetCharPressed();
-  }
-  if (IsKeyPressed(KEY_BACKSPACE) && strlen(name_input) > 0) {
-    name_input[strlen(name_input) - 1] = '\0';
-  }
+}
+
+// Отрисовка виртуальной клавиатуры
+void draw_virtual_keyboard(void) {
+    for (int row = 0; row < VK_ROWS; row++) {
+        for (int col = 0; col < VK_COLS; col++) {
+            int idx = row * VK_COLS + col;
+            if (idx >= VK_COUNT) break;
+            
+            VirtualKey vk = (VirtualKey)idx;
+            int x = VK_START_X + col * (VK_WIDTH + VK_MARGIN);
+            int y = VK_START_Y + row * (VK_HEIGHT + VK_MARGIN);
+            
+            Vector2 mouse = GetMousePosition();
+            bool hover = (x <= mouse.x && mouse.x <= x + VK_WIDTH && 
+                         y <= mouse.y && mouse.y <= y + VK_HEIGHT);
+            bool pressed = IsMouseButtonPressed(MOUSE_BUTTON_LEFT);
+            
+            Color bg = hover ? LIGHTGRAY : GRAY;
+            if ((vk == VK_SHIFT && shift_pressed)) {
+                bg = YELLOW;
+            }
+            
+            DrawRectangle(x, y, VK_WIDTH, VK_HEIGHT, bg);
+            DrawRectangleLines(x, y, VK_WIDTH, VK_HEIGHT, DARKGRAY);
+            
+            const char* label = get_key_label(vk);
+            int lw = MeasureText(label, 20);
+            DrawText(label, x + (VK_WIDTH - lw)/2, y + (VK_HEIGHT - 20)/2, 20, 
+                    (vk == VK_SHIFT) ? PURPLE : BLACK);
+        }
+    }
+}
+
+// Обработка кликов по виртуальной клавиатуре
+void handle_virtual_keyboard(void) {
+    Vector2 mouse = GetMousePosition();
+    
+    for (int row = 0; row < VK_ROWS; row++) {
+        for (int col = 0; col < VK_COLS; col++) {
+            int idx = row * VK_COLS + col;
+            if (idx >= VK_COUNT) break;
+            
+            VirtualKey vk = (VirtualKey)idx;
+            int x = VK_START_X + col * (VK_WIDTH + VK_MARGIN);
+            int y = VK_START_Y + row * (VK_HEIGHT + VK_MARGIN);
+            
+            bool hover = (x <= mouse.x && mouse.x <= x + VK_WIDTH && 
+                         y <= mouse.y && mouse.y <= y + VK_HEIGHT);
+            
+            if (hover && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+                int len = strlen(name_input);
+                
+                if (vk >= VK_A && vk <= VK_Z) {
+                    char c = 'a' + vk;
+                    if (shift_pressed) {
+                        c = 'A' + vk;
+                        shift_pressed = false; // Одноразовый Shift
+                    }
+                    if (len < MAX_NAME_LENGTH - 1) {
+                        name_input[len] = c;
+                        name_input[len + 1] = '\0';
+                    }
+                }
+                else if (vk == VK_BACKSPACE) {
+                    if (len > 0) {
+                        name_input[len - 1] = '\0';
+                    }
+                }
+                else if (vk == VK_ENTER) {
+                    if (len > 0) {
+                        add_score(name_input, score, level_params.name);
+                        state = STATE_SCOREBOARD;
+                        name_input[0] = '\0';
+                    }
+                }
+                else if (vk == VK_SHIFT) {
+                    shift_pressed = !shift_pressed;
+                }
+            }
+        }
+    }
+}
+
+// Обработка ввода имени через виртуальную клавиатуру
+void handle_name_input(void) {
+    // Обрабатываем только виртуальную клавиатуру
+    handle_virtual_keyboard();
+    
+    // Дополнительно обрабатываем Escape для отмены
+    if (IsKeyPressed(KEY_ESCAPE)) {
+        state = STATE_GAMEOVER;
+        name_input[0] = '\0';
+    }
 }
 
 //----------------------------------------------------------------------
@@ -240,14 +355,6 @@ void main_loop(void) {
     }
   } else if (state == STATE_ENTER_NAME) {
     handle_name_input();
-
-    if (IsKeyPressed(KEY_ENTER)) {
-      if (strlen(name_input) > 0) {
-        add_score(name_input, score, level_params.name);
-        state = STATE_SCOREBOARD;
-        name_input[0] = '\0';
-      }
-    }
   }
 
   BeginDrawing();
@@ -335,15 +442,10 @@ void main_loop(void) {
 
     DrawText(buffer, 310, 250, 30, MAROON);
 
-    if (draw_button(300, 350, 200, 50, BUTTON_SAVE, 25)) {
-      if (strlen(name_input) > 0) {
-        add_score(name_input, score, level_params.name);
-        submitted = true;
-        state = STATE_SCOREBOARD;
-        name_input[0] = '\0';
-      }
-    }
-    if (draw_button(300, 420, 200, 50, BUTTON_CANCEL, 25)) {
+    draw_virtual_keyboard();
+    
+    // Кнопка отмены
+    if (draw_button(300, 500, 200, 50, BUTTON_CANCEL, 25)) {
       state = STATE_GAMEOVER;
       name_input[0] = '\0';
     }
